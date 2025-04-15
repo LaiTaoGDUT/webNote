@@ -33,7 +33,7 @@ CORS（Cross-Origin Resource Sharing）是现代浏览器支持的标准跨域�
    - **触发条件**：
      - 使用 `PUT`、`DELETE` 等非简单方法。
      - 包含自定义请求头（如 `Authorization`）。
-     - `Content-Type` 为 `application/json` 等非简单值。
+     - 简单方法但`Content-Type` 为 `application/json` 等非简单值。
    - **流程**：
      1. 浏览器先发送 `OPTIONS` 预检请求，询问服务器是否允许实际请求。
         ```http
@@ -59,10 +59,10 @@ CORS（Cross-Origin Resource Sharing）是现代浏览器支持的标准跨域�
 | **请求头（客户端）**             | **响应头（服务端）**                   | 作用                                                                 |
 |----------------------------------|----------------------------------------|----------------------------------------------------------------------|
 | `Origin: http://your-site.com`   | `Access-Control-Allow-Origin: *`       | 声明允许访问的源（`*` 表示任意源，但不可与 `Credentials` 共用）。     |
-| `Access-Control-Request-Method` | `Access-Control-Allow-Methods: GET`    | 预检请求中声明实际请求的方法。                                        |
-| `Access-Control-Request-Headers`| `Access-Control-Allow-Headers: X-Auth` | 预检请求中声明实际请求携带的自定义头。                                |
+| `Access-Control-Request-Method` | `Access-Control-Allow-Methods: GET`    | 预检请求中声明实际请求的方法以及服务器允许跨域请求的方法。                                        |
+| `Access-Control-Request-Headers`| `Access-Control-Allow-Headers: X-Auth` | 预检请求中声明实际请求携带的自定义头以及服务器允许跨域请求携带的自定义头。                                |
 | -                                | `Access-Control-Expose-Headers: X-ID`  | 允许前端 JavaScript 访问的额外响应头（默认只能读取部分基础头）。      |
-| -                                | `Access-Control-Allow-Credentials: true`| 允许携带 Cookie 或 HTTP 认证信息（需前端设置 `withCredentials: true`）。|
+| -                                | `Access-Control-Allow-Credentials: true`| 允许发起请求时携带接口所在域名的 Cookie 或 HTTP 认证信息，以及允许请求返回时设置接口所在域名的 Cookie 或 HTTP 认证信息，不可与`Access-Control-Allow-Origin: *`一起用（需前端设置 `withCredentials: true`）。|
 
 ---
 
