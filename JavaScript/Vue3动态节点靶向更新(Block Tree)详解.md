@@ -76,12 +76,6 @@ export function render(_ctx, _cache, $props, $setup, $data, $options) {
 
 ```mermaid
 graph TD
-    A[div(根节点Block)] --> B[span(静态节点)]
-    A --> C[p(动态节点)]
-    A --> D[ul(动态节点Block)]
-```
-
-graph TD
     classDef startend fill:#F5EBFF,stroke:#BE8FED,stroke-width:2px
     classDef process fill:#E5F6FF,stroke:#73A6FF,stroke-width:2px
     classDef decision fill:#FFF6CC,stroke:#FFBC52,stroke-width:2px
@@ -102,6 +96,7 @@ graph TD
     I --> I1(li[动态节点 - 收集进v-for-item Block]):::process
     I1 --> I2(动态文本 - item.name):::process
     E -->|false| J(注释节点):::process 
+```
 
 
 ---
