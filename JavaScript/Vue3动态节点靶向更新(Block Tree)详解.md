@@ -88,9 +88,9 @@ graph TD
     A([render函数]):::startend --> B(div, 根Block):::process
     B --> C(span):::process
     C --> C1(静态文本 - Static):::process
-    B1 --> D(p, 动态节点 - 收集进根Block):::process
+    B --> D(p, 动态节点 - 收集进根Block):::process
     D --> D1(动态文本 - dynamicText):::process
-    B1 --> E(showList条件判断):::decision
+    B --> E(showList条件判断):::decision
     E -->|true| F(ul, v-if Block - 收集进根Block):::process
     F --> G(Fragment, v-for Block - 收集进根Block):::process
     G --> H(renderList循环):::process
