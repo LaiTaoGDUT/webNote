@@ -83,18 +83,18 @@ graph TD
     A([render函数]):::startend --> B(根Block - div):::process
     B --> B1(div):::process
     B1 --> C(span):::process
-    C --> C1(静态文本 - Static):::process
-    B1 --> D(p[动态节点 - 收集进根Block]):::process
-    D --> D1(动态文本 - dynamicText):::process
+    C --> C1(静态文本, Static):::process
+    B1 --> D(p[动态节点, 收集进根Block]):::process
+    D --> D1(动态文本, dynamicText):::process
     B1 --> E(showList条件判断):::decision
-    E -->|true| F(v-if Block - 收集进根Block):::process
+    E -->|true| F(v-if Block, 收集进根Block):::process
     F --> F1(ul):::process
-    F1 --> G(v-for Block - 收集进根Block):::process
+    F1 --> G(v-for Block, 收集进根Block):::process
     G --> G1(Fragment):::process
     G1 --> H(renderList循环):::process
-    H --> I(v-for-item Block - 收集进v-for Block):::process
-    I --> I1(li[动态节点 - 收集进v-for-item Block]):::process
-    I1 --> I2(动态文本 - item.name):::process
+    H --> I(v-for-item Block, 收集进v-for Block):::process
+    I --> I1(li[动态节点, 收集进v-for-item Block]):::process
+    I1 --> I2(动态文本, item.name):::process
     E -->|false| J(注释节点):::process 
 ```
 
