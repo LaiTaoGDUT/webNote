@@ -127,7 +127,82 @@
   }
   ```
 
-#### **3. 性能优化细节**
+#### **3. 对数组操作的额外拦截机制**
+
+- **关键拦截点**
+
+    Vue3 对数组代理使用额外逻辑处理，使响应式可以覆盖以下场景：
+
+    - **直接修改索引**：`arr[0] = 1`
+    - **修改 `length`**：`arr.length = 0`
+    - **调用方法修改数组**：`arr.push()`, `arr.splice()` 等
+
+- **核心代码逻辑**
+
+    在 Vue3 的响应式模块中，`set`陷阱对数组进行额外的处理，包含以下关键逻辑：
+
+    ```javascript
+    // Proxy 的 set 陷阱处理数组
+    function set(target: Array<any>, key: string | symbol, value: any, receiver: object): boolean {
+    const oldLength = target.length;
+    const hadKey = Array.isArray(target) 
+        ? (Number(key) < target.length) // 判断是修改已有索引还是新增元素
+        : hasOwn(target, key);
+    
+    const result = Reflect.set(target, key, value, receiver);
+
+    // 触发更新（分两种情况）
+    if (!hadKey) {
+        // 新增属性（如通过索引添加元素）
+        trigger(target, TriggerOpTypes.ADD, key, value);
+    } else if (hasChanged(value, oldValue)) {
+        // 修改已有属性
+        trigger(target, TriggerOpTypes.SET, key, value, oldValue);
+    }
+
+    // 处理 length 变化
+    if (Array.isArray(target) && key === 'length') {
+        // 直接修改 length（如 arr.length = 2）
+        const newLength = Number(value);
+        for (let i = newLength; i < oldLength; i++) {
+        trigger(target, TriggerOpTypes.DELETE, i.toString());
+        }
+    } else if (Array.isArray(target)) {
+        // 隐式修改 length（如 arr[10] = 1）
+        const lengthKey = 'length';
+        const newLength = target.length;
+        if (newLength !== oldLength && hasOwn(target, lengthKey)) {
+        trigger(target, TriggerOpTypes.SET, lengthKey);
+        }
+    }
+
+    return result;
+    }
+    ```
+
+
+
+- **核心处理流程**
+
+    1. **直接修改 `length`**
+
+        当执行 `arr.length = 2` 时：
+        - **Proxy 触发 `set` 陷阱**，`key` 为 `'length'`。
+        - **对比新旧长度**：若新长度 < 旧长度，遍历被删除的索引（如索引 2 到旧长度-1），触发 `DELETE` 操作。
+        - **触发 `length` 的更新**：标记 `length` 属性变化。
+
+    2. **通过索引隐式修改 `length`**
+        当执行 `arr[5] = 10` 且原数组长度 < 5 时：
+        - **Proxy 触发 `set` 陷阱**，`key` 为 `'5'`。
+        - **检测到索引超过原长度**，数组的 `length` 自动变为 6。
+        - **对比新旧 `length`**，触发 `length` 属性的 `SET` 操作。
+
+    3. **调用数组方法**
+        当执行 `arr.push(1)` 时：
+        - **Proxy 拦截方法调用**：`push` 方法会先读取 `length`（触发 `get` 陷阱），再修改 `length` 和索引`1`（触发多次 `set` 陷阱）。
+        - **自动处理依赖**：无需重写方法，所有操作会通过 Proxy 拦截后触发更新。
+
+#### **4. 性能优化细节**
 - **惰性代理（Lazy Proxy）**：
   - 仅在访问对象属性时创建子对象的 Proxy，避免初始化时深度遍历。
   - 示例：访问 `obj.a.b` 时，`obj.a` 返回后才会代理 `obj.a.b`。
@@ -150,79 +225,6 @@
 | **索引修改**       | `arr[0] = 1` 无法触发更新             | 直接触发 `set` 拦截                   |
 | **length 修改**    | `arr.length = 0` 无法触发更新         | 触发 `set` 拦截并检测 `length` 变化   |
 | **方法调用**       | 依赖重写的 7 个方法                   | 原生方法直接触发 Proxy 拦截           |
-
-##### **Proxy 对数组操作的拦截机制**
-
-###### **1. 关键拦截点**
-Vue3 的数组代理主要依赖 Proxy 的 **`set`** 和 **`deleteProperty`**，覆盖以下场景：
-- **直接修改索引**：`arr[0] = 1`
-- **修改 `length`**：`arr.length = 0`
-- **调用方法修改数组**：`arr.push()`, `arr.splice()` 等
-
-###### **2. 核心代码逻辑**
-
-在 Vue3 的响应式模块中，`set`陷阱对数组进行额外的处理，包含以下关键逻辑：
-
-```javascript
-// Proxy 的 set 陷阱处理数组
-function set(target: Array<any>, key: string | symbol, value: any, receiver: object): boolean {
-  const oldLength = target.length;
-  const hadKey = Array.isArray(target) 
-    ? (Number(key) < target.length) // 判断是修改已有索引还是新增元素
-    : hasOwn(target, key);
-  
-  const result = Reflect.set(target, key, value, receiver);
-
-  // 触发更新（分两种情况）
-  if (!hadKey) {
-    // 新增属性（如通过索引添加元素）
-    trigger(target, TriggerOpTypes.ADD, key, value);
-  } else if (hasChanged(value, oldValue)) {
-    // 修改已有属性
-    trigger(target, TriggerOpTypes.SET, key, value, oldValue);
-  }
-
-  // 处理 length 变化
-  if (Array.isArray(target) && key === 'length') {
-    // 直接修改 length（如 arr.length = 2）
-    const newLength = Number(value);
-    for (let i = newLength; i < oldLength; i++) {
-      trigger(target, TriggerOpTypes.DELETE, i.toString());
-    }
-  } else if (Array.isArray(target)) {
-    // 隐式修改 length（如 arr[10] = 1）
-    const lengthKey = 'length';
-    const newLength = target.length;
-    if (newLength !== oldLength && hasOwn(target, lengthKey)) {
-      trigger(target, TriggerOpTypes.SET, lengthKey);
-    }
-  }
-
-  return result;
-}
-```
-
----
-
-###### 3. 核心处理流程
-
-1. **直接修改 `length`**
-
-    当执行 `arr.length = 2` 时：
-    - **Proxy 触发 `set` 陷阱**，`key` 为 `'length'`。
-    - **对比新旧长度**：若新长度 < 旧长度，遍历被删除的索引（如索引 2 到旧长度-1），触发 `DELETE` 操作。
-    - **触发 `length` 的更新**：标记 `length` 属性变化。
-
-2. **通过索引隐式修改 `length`**
-    当执行 `arr[5] = 10` 且原数组长度 < 5 时：
-    - **Proxy 触发 `set` 陷阱**，`key` 为 `'5'`。
-    - **检测到索引超过原长度**，数组的 `length` 自动变为 6。
-    - **对比新旧 `length`**，触发 `length` 属性的 `SET` 操作。
-
-3. **调用数组方法**
-    当执行 `arr.push(1)` 时：
-    - **Proxy 拦截方法调用**：`push` 方法会先读取 `length`（触发 `get` 陷阱），再修改 `length` 和索引`1`（触发多次 `set` 陷阱）。
-    - **自动处理依赖**：无需重写方法，所有操作会通过 Proxy 拦截后触发更新。
 
 #### **2. 嵌套对象处理**
 - **Vue2**：
