@@ -30,7 +30,7 @@
   ```
 - **构建 Block**：
 
-    Block元素和普通元素的区别在于其内部有一个`dynamicChildren` 数组，里面维护了此元素下的所有动态子元素以及Block子元素（Block子元素内部的动态孙子元素以及Block孙子元素则会被收集到Block子元素中）
+    Block元素和普通元素的区别在于其内部有一个`dynamicChildren` 数组，里面维护了此元素下的所有动态子元素以及Block子元素（不包含Block子元素内部的动态孙子元素以及Block孙子元素，它们会被收集到Block子元素中）
 
   - **根 Block**：每个组件的模板根节点自动创建一个 `根Block`。
   - **动态子节点收集**：将 Block 内的动态子节点（包括嵌套 Block）记录到 `dynamicChildren` 数组中。
