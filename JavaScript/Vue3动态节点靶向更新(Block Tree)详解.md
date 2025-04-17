@@ -29,9 +29,14 @@
   _createVNode("div", null, _ctx.value, 1 /* TEXT */);
   ```
 - **构建 Block**：
-  - **根 Block**：每个组件的模板根节点自动创建一个 Block。
-  - **嵌套 Block**：遇到 `v-if`、`v-for` 等可能导致html结构改变的动态结构时，生成子 Block并进入子Block。
+
+    Block元素和普通元素的区别在于其内部有一个`dynamicChildren` 数组，里面维护了此元素下的所有动态子元素以及Block子元素（Block子元素内部的动态孙子元素以及Block孙子元素则会被收集到Block子元素中）
+
+  - **根 Block**：每个组件的模板根节点自动创建一个 `根Block`。
   - **动态子节点收集**：将 Block 内的动态子节点（包括嵌套 Block）记录到 `dynamicChildren` 数组中。
+  - **嵌套 Block**：遇到 `v-if`、`v-for` 等可能导致html结构改变的动态结构时，生成子 Block并进入子Block收集其内部的动态子节点。
+    - `v-if`:  元素节点作为一个 `v-if Block`
+    - `v-for`: 先创建一个`Fragment`元素作为一个`v-for Block`（标记为列表渲染，后续更新其`dynamicChildren`数组时使用列表diff方法），遍历`v-for`列表，每个列表节点创建一个`v-for-item Block`，即`v-for`指令会创建两层Block
 
 
 
@@ -39,8 +44,8 @@
 
 将 AST 生成可运行的`render`函数代码，通过`openBlock()`和`createElementBlock()`创建新的 Block 节点并收集内部所有的动态子节点到`dynamicChildren`数组中。
 
-- `openBlock()`：创建一个新的全局`dynamicChildren`数组，开始收集动态子节点。
-- `createElementBlock()`：生成一个 Block 节点，遍历子节点并使用 `dynamicChildren` 数组存储所有动态子节点，最后存储`dynamicChildren`数组。
+- `openBlock()`：创建一个新的`dynamicChildren`数组，开始收集动态子节点。
+- `createElementBlock()`：生成一个 Block 节点，遍历子节点并使用 `dynamicChildren` 数组存储所有动态子节点和Block子节点，最后存储`dynamicChildren`数组到节点内。
 
 **示例模板**：
 ```html
@@ -124,11 +129,19 @@ Vue 的 Diff 算法会优先利用 Block Tree 进行靶向更新：
     - 若 `PatchFlag` 为 `CLASS`：仅对比 class 属性。
   - 若子节点自身是 Block（如 `v-for` 列表），递归对比其 `dynamicChildren`。
 
+**示例：普通元素更新**
+
+- 当 `dynamicText` 数组变化时：
+  1. 按顺序比较根 Block的 `dynamicChildren`数组
+  2. 对比每个动态子节点的动态部分，更新有差异的地方
+
 **示例：列表更新（v-for）**
 - 当 `items` 数组变化时：
-  1. 对比新旧 `dynamicChildren` 中的 `li` Block。
-  2. 通过 `key` 复用相同项，移动或增删节点。
-  3. 仅更新发生变化的 `item.name`（通过 `PatchFlag` 标记的文本节点）。
+  1. 通过标记识别是列表渲染，使用列表diff
+  2. 对比新旧 `dynamicChildren` 中的 `li` Block。
+  3. 头头比较，头尾比较，尾头比较，尾尾比较，keyMap比较
+  4. 通过 `key` 复用相同项，移动或增删节点。
+  5. 仅更新发生变化的 `item.name`（通过 `PatchFlag` 标记的文本节点）。
 
 #### **4. 静态内容跳过**
 - 静态节点（如 `<span>Static</span>`）在 Diff 时直接被跳过，无需对比。
