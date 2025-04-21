@@ -59,10 +59,10 @@
      ```javascript
      function Person(name) {
        this.name = name;
-       // 相当于
-       // const obj = Object.create(Persion.prototype);
-       // obj.name = name;
      }
+     // 相当于
+     // const obj = Object.create(Persion.prototype);
+     // const person = Person.apply(obj)
      ```
 
 ---
@@ -137,7 +137,3 @@ function _new(constructorFunc, ...args) {
     // BigInt
     BigInt()
   ```
-
----
-
-通过这个过程，`new` 实现了基于原型的面向对象编程，是 JavaScript 中实现“类”和实例的核心机制。
