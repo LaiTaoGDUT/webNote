@@ -34,6 +34,8 @@ JavaScript 的原型与原型链是其继承机制的核心，理解它们对于
 
 #### 4. `new`调用发生了什么？
 
+[new调用发生了什么.md](https://github.com/LaiTaoGDUT/webNote/blob/main/JavaScript/new%E8%B0%83%E7%94%A8%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88.md)
+
 #### 5. 创建一个对象的方式
 
 - `new`调用: `const person = new Person`，如果函数内部没有返回其他对象，则新对象的`[[Prototype]]`指向函数的`prototype`属性。
