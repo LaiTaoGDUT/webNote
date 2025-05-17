@@ -46,10 +46,17 @@ class Promise {
     if (curPromise === oriPromise) {
       return reject(new TypeError('循环引用'));
     }
+    let called = false; // 成功或是失败只能调用一次，防止thenable对象（而非Promise）多次调用了resolve或reject
     if (oriPromise instanceof Promise || (oriPromise !== null && (typeof oriPromise === 'object' || typeof oriPromise === 'function') && oriPromise.then)) {
       oriPromise.then((value) => {
+        if (called) return;
+        called = true;
         this.resolvePromise(curPromise, value, resolve, reject);
-      }, reject);
+      }, (err) => {
+        if (called) return;
+        called = true;
+        reject(err);
+      });
     } else {
       return resolve(oriPromise);
     }
@@ -139,6 +146,8 @@ a.then((result) => {
 })
 
 console.log(1)
+
+
 
 
 ```
